@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProjectRequest;
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\Technology;
 use App\Models\Type;
 
 class ProjectController extends Controller
@@ -50,6 +51,7 @@ class ProjectController extends Controller
         $project= Project::create($data);
         $project->save();
 
+
         return redirect()->route("admin.projects.show", $project->id);
     }
 
@@ -77,11 +79,15 @@ class ProjectController extends Controller
     {
         $project= Project::findOrFail($id);
         $types = Type::all();
+        //Recuper un array con tutte le tecnologie nel mio db
+        $technologies = Technology::all();
+
 
 
         return view("admin.projects.edit", [
             "project"=>$project,
-            "types"=>$types
+            "types"=>$types,
+            "technologies"=>$technologies
         ]);
 
     }
@@ -95,8 +101,8 @@ class ProjectController extends Controller
      */
     public function update(Request $request, $id)
     {   
-        //Scrivo uali sono i dati che voglio ricevere tramite l update
-
+        //validatedusa le validazioni/regole che ho indicato nello StoreProjectRequest
+        $data = $request->validated();
 
         $data = $request->all();
 
@@ -104,7 +110,11 @@ class ProjectController extends Controller
 
         $project->update($data);
 
-        return redirect()->route("admin.projects.show",$project->id);
+        // la funzione sync si arrangia a capire quali sono le tecnologie da aggiungere,
+        // quali da togliere e quali da lasciare invariati
+        $project->technologies()->sync($data["technologies"]);
+
+        return redirect()->route("admin.projects.show", compact("id","project"));
 
 
     }
